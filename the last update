@@ -1,0 +1,295 @@
+import os
+student_data = {}
+
+def main():
+    load_student() 
+    while True:
+        print("-----------------------------------")
+        print("Student Grade Management System")
+        print("1. Add New Student")
+        print("2. Update Student Grade")
+        print("3. Calculate Average Grade")
+        print("4. Generate Report")
+        print("5. Save Data")
+        print("6. Exit")
+        print("-----------------------------------")
+        
+        # Use try-except for main menu choice to catch potential non-string inputs (though less common for input())
+        try:
+            choice = input("Enter Your Choice: ").strip()
+
+            if choice == "1":
+                add_student()
+            elif choice == "2":
+                update_grade()
+            elif choice == "3":
+                calculate_average_grade()
+            elif choice == "4":
+                generate_report()
+            elif choice == "5":
+                save_student()
+            elif choice == "6":
+                print("Saving data before exiting...")
+                save_student()
+                print("Goodbye!")
+                break
+            else:
+                print("Error: Invalid choice. Please enter a number from 1 to 6 only.")
+        except Exception as e:
+            print(f"An unexpected error occurred in the main menu: {e}")
+
+# File Handling: load_student - uses 'with' statement and try-except for robust file reading
+def load_student():
+    global student_data
+    filename = "grade.txt"
+    student_data = {}
+
+    # Proactive check for file existence to prevent FileNotFoundError
+    if not os.path.exists(filename):
+        print("No data file found. Starting with an empty dataset.")
+        student_data = {} 
+        return
+
+    try:
+        # Using 'with' statement ensures the file is properly closed, even if errors occur
+        with open(filename, "r") as file:
+            lines = file.readlines()
+            for line in lines:
+                if not line.strip(): # Skip empty lines
+                    continue
+
+                parts = line.strip().split(", ")
+                
+                # Validate basic structure of the line
+                if len(parts) < 2: 
+                    print(f"Warning: Skipping malformed line (missing ID or Name): '{line.strip()}'")
+                    continue
+
+                student_id = parts[0].strip()
+                name = parts[1].strip()
+                subjects = {}
+
+                # Process subjects and grades if they exist
+                if len(parts) > 2: 
+                    for entry in parts[2:]: 
+                        if ":" in entry:
+                            try:
+                                subject, grade_str = entry.split(":", 1) # Split only on the first colon
+                                grade = int(grade_str.strip()) # Attempt to convert grade to integer
+                                subjects[subject.strip()] = grade
+                            except ValueError:
+                                # Handle cases where grade is not a valid integer
+                                print(f"Warning: Skipped invalid grade format for entry: '{entry}' in line: '{line.strip()}'")
+                            except Exception as e:
+                                # Catch any other unexpected errors during subject parsing
+                                print(f"Warning: An unexpected error occurred parsing subject entry '{entry}': {e} in line: '{line.strip()}'")
+                        else:
+                            print(f"Warning: Skipped malformed subject entry (missing ':') in line: '{line.strip()}'")
+                
+                [student_id] = {"name": name, "subjects": subjects}
+        print("Student data loaded successfully.")
+    except IOError as e: # Catch specific I/O errors during file reading
+        print(f"Error: Could not read file '{filename}'. Details: {e}")
+        student_data = {} # Reset data if loading fails
+    except Exception as e: # Catch any other unexpected errors during the loading process
+        print(f"Error: An unexpected error occurred while loading data: {e}")
+        student_data = {} # Reset data if loading fails
+
+# File Handling: save_student - uses 'with' statement and try-except for robust file writing
+def save_student():
+    global student_data
+    filename = "grade.txt"
+
+    try:
+        # Using 'with' statement ensures the file is properly closed after writing
+        with open(filename, "w") as file:
+            for student_id, info in student_data.items():
+                subject_list = [f"{subject}:{grade}" for subject, grade in info["subjects"].items()]
+                
+                # Construct the line for saving
+                line = f"{student_id}, {info['name']}"
+                if subject_list: 
+                    line += f", {', '.join(subject_list)}"
+                line += "\n"
+                file.write(line)
+        print("Student data has saved successfully.")
+    except IOError as e: # Catch specific I/O errors during file writing
+        print(f"Error: Save failed for file '{filename}'. Details: {e}")
+    except Exception as e: # Catch any other unexpected errors during saving
+        print(f"Error: An unexpected error occurred while saving data: {e}")
+
+
+def add_student():
+    global student_data
+
+    while True:
+        student_id = input("Enter Student ID: ").strip()
+
+        if not student_id:
+            print("Error: Student ID cannot be empty.")
+        elif not student_id.isdigit():
+            print("Error: Student ID must be numeric (e.g., 101).")
+        elif student_id in student_data:
+            print("Error: That Student ID already exists. Please enter a unique ID.")
+        else:
+            break
+
+    name = input("Enter Student Name: ").strip()
+    if not name:
+        print("Warning: Student name cannot be empty. Proceeding with empty name.")
+
+    subjects = {}
+
+    print("\nEnter Subject and Grade (example: Math:85). Type 'done' to finish.")
+    while True:
+        entry = input("Subject:Grade or 'done': ").strip()
+        if entry.lower() == "done":
+            break
+        
+        if ":" in entry:
+            try:
+                subject, grade_str = entry.split(":", 1) # Split only on the first colon
+                subject = subject.strip()
+                
+                if not subject:
+                    print("Error: Subject name cannot be empty. Please re-enter.")
+                    continue
+
+                grade = int(grade_str.strip()) # Attempt to convert grade to integer
+                
+                if 0 <= grade <= 100:
+                    subjects[subject] = grade
+                    print(f"Added {subject}: {grade}")
+                else:
+                    print("Error: Grade must be between 0 and 100. Please re-enter.")
+            except ValueError:
+                # Catches errors if grade_str is not a valid integer
+                print("Error: Invalid grade format. Please enter a numeric grade (e.g., Math:85).")
+            except Exception as e:
+                # Catch any other unexpected errors during parsing
+                print(f"Error: An unexpected error occurred while processing subject entry: {e}")
+        else:
+            print("Error: Format error. Please use 'Subject:Grade' (e.g., Math:85).")
+
+    student_data[student_id] = {"name": name, "subjects": subjects}
+    print(f"Student '{name}' (ID: {student_id}) has been added successfully.")
+    
+def update_grade():
+    global student_data
+
+    student_id = input("Enter Student ID to update: ").strip()
+    if student_id not in student_data:
+        print("Error: Student ID not found.")
+        return
+
+    subject = input("Enter Subject Name to update: ").strip()
+    if not subject:
+        print("Error: Subject name cannot be empty. Update cancelled.")
+        return
+
+    # Check if subject exists for the student
+    if subject not in student_data[student_id]["subjects"]:
+        print(f"Subject '{subject}' not found for student '{student_data[student_id]['name']}'.")
+        choice = input(f"Do you want to add '{subject}' for this student? (yes/no): ").lower().strip()
+        if choice != 'yes':
+            print("Grade update cancelled.")
+            return 
+    
+    while True: # Loop to ensure valid grade input
+        grade_input = input("Enter New Grade (0-100): ").strip()
+        try:
+            grade = int(grade_input) # Attempt to convert grade to integer
+            if 0 <= grade <= 100:
+                student_data[student_id]["subjects"][subject] = grade
+                print(f"Grade for {student_data[student_id]['name']} in {subject} has been updated to {grade}.")
+                break # Exit loop on successful update
+            else:
+                print("Error: Grade must be between 0 and 100. Please try again.")
+        except ValueError:
+            # Catches errors if grade_input is not a valid integer
+            print("Error: Invalid input. Please enter a numeric grade.")
+        except Exception as e:
+            # Catch any other unexpected errors
+            print(f"Error: An unexpected error occurred: {e}. Update cancelled.")
+            break # Exit loop on unexpected error
+   
+def calculate_average_grade():
+    global student_data
+    if not student_data:
+        print("No students available to calculate average.")
+        return
+
+    choice = input("Calculate average for 'student' or 'subject': ").lower().strip()
+
+    if choice == "student":
+        student_id = input("Enter Student ID: ").strip()
+        if student_id in student_data:
+            subjects = student_data[student_id]["subjects"]
+            if subjects:
+                # Prevent ZeroDivisionError if a student has no grades
+                try:
+                    average = sum(subjects.values()) / len(subjects)
+                    print(f"Average for {student_data[student_id]['name']} (ID: {student_id}): {average:.2f}")
+                except ZeroDivisionError:
+                    print(f"Error: {student_data[student_id]['name']} (ID: {student_id}) has no grades to calculate an average.")
+            else:
+                print("This student has no grades yet.")
+        else:
+            print("Error: Student not found.")
+    elif choice == "subject":
+        subject_name = input("Enter Subject Name: ").strip()
+        if not subject_name:
+            print("Error: Subject name cannot be empty.")
+            return
+
+        total = 0
+        count = 0
+        for info in student_data.values():
+            if subject_name in info["subjects"]:
+                total += info["subjects"][subject_name]
+                count += 1
+        if count > 0:
+            average = total / count
+            print(f"The Subject Average ({subject_name}): {average:.2f}")
+        else:
+            print(f"No records found for subject '{subject_name}'.")
+    else:
+        print("Error: Invalid choice. Please type 'student' or 'subject'.")
+   
+def generate_report():
+    global student_data
+    if not student_data:
+        print("No student records available to generate a report.")
+        return
+
+    print("\n----------- Student Report -----------")
+    print("-----------------------------------------------------------------------------------------")
+    print("{:<5}\t{:<15}\t{:<35}\t{:<10}\t{:<8}".format("ID", "Name", "Subjects", "Average", "Status"))
+    print("-----------------------------------------------------------------------------------------")
+
+    for student_id, info in student_data.items():
+        name = info["name"]
+        subjects = info["subjects"]
+        subject_list = []
+        total = 0
+        count = 0
+
+        for subject, grade in subjects.items():
+            subject_list.append(f"{subject}:{grade}")
+            total += grade
+            count += 1
+
+        # Handle ZeroDivisionError for average calculation in report
+        try:
+            average = total / count
+        except ZeroDivisionError:
+            average = 0 # Set average to 0 if no grades
+            
+        status = "PASSED" if average >= 75 else "FAILED" if count > 0 else "N/A"
+        avg_display = f"{average:.2f}" if count > 0 else "N/A"
+        subject_display = ", ".join(subject_list) if subject_list else "No grades"
+
+        print(f"{student_id:<5}\t{name:<15}\t{subject_display:<35}\t{avg_display:<10}\t{status:<8}")
+    print("-----------------------------------------------------------------------------------------")
+   
+main()
