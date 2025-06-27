@@ -17,7 +17,6 @@ def main():
         # Use try-except for main menu choice to catch potential non-string inputs (though less common for input())
         try:
             choice = input("Enter Your Choice: ").strip()
-
             if choice == "1":
                 add_student()
             elif choice == "2":
@@ -30,8 +29,8 @@ def main():
                 save_student()
             elif choice == "6":
                 print("Saving data before exiting...")
-                save_student()
                 print("Goodbye!")
+                input()
                 break
             else:
                 print("Error: Invalid choice. Please enter a number from 1 to 6 only.")
@@ -43,12 +42,6 @@ def load_student():
     global student_data
     filename = "grade.txt"
     student_data = {}
-
-    # Proactive check for file existence to prevent FileNotFoundError
-    if not os.path.exists(filename):
-        print("No data file found. Starting with an empty dataset.")
-        student_data = {} 
-        return
 
     try:
         # Using 'with' statement ensures the file is properly closed, even if errors occur
@@ -86,7 +79,7 @@ def load_student():
                         else:
                             print(f"Warning: Skipped malformed subject entry (missing ':') in line: '{line.strip()}'")
                 
-                [student_id] = {"name": name, "subjects": subjects}
+                student_data[student_id] = {"name": name, "subjects": subjects} 
         print("Student data loaded successfully.")
     except IOError as e: # Catch specific I/O errors during file reading
         print(f"Error: Could not read file '{filename}'. Details: {e}")
@@ -99,7 +92,6 @@ def load_student():
 def save_student():
     global student_data
     filename = "grade.txt"
-
     try:
         # Using 'with' statement ensures the file is properly closed after writing
         with open(filename, "w") as file:
@@ -111,7 +103,7 @@ def save_student():
                 if subject_list: 
                     line += f", {', '.join(subject_list)}"
                 line += "\n"
-                file.write(line)
+                file.writelines(line)
         print("Student data has saved successfully.")
     except IOError as e: # Catch specific I/O errors during file writing
         print(f"Error: Save failed for file '{filename}'. Details: {e}")
@@ -127,8 +119,6 @@ def add_student():
 
         if not student_id:
             print("Error: Student ID cannot be empty.")
-        elif not student_id.isdigit():
-            print("Error: Student ID must be numeric (e.g., 101).")
         elif student_id in student_data:
             print("Error: That Student ID already exists. Please enter a unique ID.")
         else:
@@ -137,12 +127,14 @@ def add_student():
     name = input("Enter Student Name: ").strip()
     if not name:
         print("Warning: Student name cannot be empty. Proceeding with empty name.")
+    elif name.isdigit():
+        print("Warning: Student name should not be numeric. Proceed with provided name.")
 
     subjects = {}
 
     print("\nEnter Subject and Grade (example: Math:85). Type 'done' to finish.")
     while True:
-        entry = input("Subject:Grade or 'done': ").strip()
+        entry = input("Subject:Grade or 'done': ").lower().strip()
         if entry.lower() == "done":
             break
         
@@ -182,7 +174,7 @@ def update_grade():
         print("Error: Student ID not found.")
         return
 
-    subject = input("Enter Subject Name to update: ").strip()
+    subject = input("Enter Subject Name to update: ").lower().strip()
     if not subject:
         print("Error: Subject name cannot be empty. Update cancelled.")
         return
@@ -221,7 +213,7 @@ def calculate_average_grade():
 
     choice = input("Calculate average for 'student' or 'subject': ").lower().strip()
 
-    if choice == "student":
+    if choice == "student id":
         student_id = input("Enter Student ID: ").strip()
         if student_id in student_data:
             subjects = student_data[student_id]["subjects"]
