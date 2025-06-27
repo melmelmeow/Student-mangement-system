@@ -22,13 +22,13 @@ def main():
             elif choice == "2":
                 update_grade()
             elif choice == "3":
-                calculate_average_grade()
+                calculate_average()
             elif choice == "4":
                 generate_report()
             elif choice == "5":
                 save_student()
             elif choice == "6":
-                print("Saving data before exiting...")
+                print("Warning please make sure to save the data.")
                 print("Goodbye!")
                 input()
                 break
@@ -172,7 +172,6 @@ def update_grade():
     student_id = input("Enter Student ID to update: ").strip()
     if student_id not in student_data:
         print("Error: Student ID not found.")
-        return
 
     subject = input("Enter Subject Name to update: ").lower().strip()
     if not subject:
@@ -205,49 +204,27 @@ def update_grade():
             print(f"Error: An unexpected error occurred: {e}. Update cancelled.")
             break # Exit loop on unexpected error
    
-def calculate_average_grade():
+def calculate_average():
     global student_data
-    if not student_data:
-        print("No students available to calculate average.")
+
+    student_id = input("Enter Student ID: ").strip()
+
+    if student_id not in student_data:
+        print("Error: Student ID not found.")
         return
 
-    choice = input("Calculate average for 'student' or 'subject': ").lower().strip()
+    subjects = student_data[student_id].get("subjects", {})
+    if not subjects:
+        print("This student has no grades yet.")
+        return
 
-    if choice == "student id":
-        student_id = input("Enter Student ID: ").strip()
-        if student_id in student_data:
-            subjects = student_data[student_id]["subjects"]
-            if subjects:
-                # Prevent ZeroDivisionError if a student has no grades
-                try:
-                    average = sum(subjects.values()) / len(subjects)
-                    print(f"Average for {student_data[student_id]['name']} (ID: {student_id}): {average:.2f}")
-                except ZeroDivisionError:
-                    print(f"Error: {student_data[student_id]['name']} (ID: {student_id}) has no grades to calculate an average.")
-            else:
-                print("This student has no grades yet.")
-        else:
-            print("Error: Student not found.")
-    elif choice == "subject":
-        subject_name = input("Enter Subject Name: ").strip()
-        if not subject_name:
-            print("Error: Subject name cannot be empty.")
-            return
+    print(f"\nGrades for {student_data[student_id]['name']} (ID: {student_id}):")
+    for subject, grade in subjects.items():
+        print(f" - {subject}: {grade}")
 
-        total = 0
-        count = 0
-        for info in student_data.values():
-            if subject_name in info["subjects"]:
-                total += info["subjects"][subject_name]
-                count += 1
-        if count > 0:
-            average = total / count
-            print(f"The Subject Average ({subject_name}): {average:.2f}")
-        else:
-            print(f"No records found for subject '{subject_name}'.")
-    else:
-        print("Error: Invalid choice. Please type 'student' or 'subject'.")
-   
+    average = sum(subjects.values()) / len(subjects)
+    print(f"\nAverage grade: {average:.2f}")
+    
 def generate_report():
     global student_data
     if not student_data:
